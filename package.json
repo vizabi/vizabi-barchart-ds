@@ -7,7 +7,7 @@
   "devDependencies": {
     "vizabi-tool-bundler": "github:vizabi/vizabi-tool-bundler"
   },
-  "name": "vizabi-barchart-double-side",
+  "name": "vizabi-barchart-ds",
   "version": "1.0.0",
   "dependencies": {
     "vizabi": "^0.20.2-6"
