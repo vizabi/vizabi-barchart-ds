@@ -30,6 +30,9 @@ const BarChartDS = Component.extend({
       name: "marker",
       type: "model"
     }, {
+      name: "marker_order",
+      type: "model"
+    }, {
       name: "entities",
       type: "entities"
     }, {
@@ -65,26 +68,31 @@ const BarChartDS = Component.extend({
           }
         }
         if (!_this.snapped) {
-          if (_this.timeSteps.filter(t => (t - _this.model.time.value) == 0).length) {
+//          if (_this.timeSteps.filter(t => (t - _this.model.time.value) == 0).length) {
             _this.model.marker.getFrame(_this.model.time.value, frame => {
               _this.frame = frame;
               _this.frameAxisX = frame.axis_x;
-              _this._updateEntities();
-              _this.updateBarsOpacity();
-            });
-          } else {
-            const nextIndex = d3.bisectLeft(_this.timeSteps, _this.model.time.value);
-            const prevFrameTime = _this.timeSteps[nextIndex - 1];
-            const nextFrameTime = _this.timeSteps[nextIndex];
-            const fraction = (_this.model.time.value - prevFrameTime) / (nextFrameTime - prevFrameTime);
-            _this.model.marker.getFrame(nextFrameTime, nValues => {
-              _this.model.marker.getFrame(prevFrameTime, pValues => {
-                _this.frameAxisX = _this.interpolateDiagonal(pValues.axis_x, nValues.axis_x, fraction);
+              _this.model.marker_order.getFrame(_this.model.time.value, frameOrder => {
+                _this.frameOrder = frameOrder.hook_order;
+
+                _this._reorderBars();
                 _this._updateEntities();
                 _this.updateBarsOpacity();
               });
             });
-          }
+          // } else {
+          //   const nextIndex = d3.bisectLeft(_this.timeSteps, _this.model.time.value);
+          //   const prevFrameTime = _this.timeSteps[nextIndex - 1];
+          //   const nextFrameTime = _this.timeSteps[nextIndex];
+          //   const fraction = (_this.model.time.value - prevFrameTime) / (nextFrameTime - prevFrameTime);
+          //   _this.model.marker.getFrame(nextFrameTime, nValues => {
+          //     _this.model.marker.getFrame(prevFrameTime, pValues => {
+          //       _this.frameAxisX = _this.interpolateDiagonal(pValues.axis_x, nValues.axis_x, fraction);
+          //       _this._updateEntities();
+          //       _this.updateBarsOpacity();
+          //     });
+          //   });
+          // }
         }
         _this.snapped = false;
       },
@@ -224,7 +232,7 @@ const BarChartDS = Component.extend({
     this.xAxisLeft = axisSmart("bottom");
     this.yAxis = axisSmart("left");
     this.xScales = [];
-    this.SHIFTEDAGEDIM = "s_age";
+    //this.SHIFTEDAGEDIM = "s_age";
 
     this.totalFieldName = "Total";
   },
@@ -240,9 +248,9 @@ const BarChartDS = Component.extend({
     const stackDim = this.model.entities.dim;
     const sideDim = this.model.entities_side.dim;
 
-    this.colorUseConstant = this.model.marker.color.use == "constant";
-    this.stackSkip = this.colorUseConstant || stackDim == sideDim;
-    this.geoLess = stackDim !== this.geoDomainDimension && sideDim !== this.geoDomainDimension;
+    this.colorUseNotProperty = this.model.marker.color.use == "constant" || this.model.marker.color.use == "indicator";
+    this.stackSkip = this.colorUseNotProperty || stackDim == sideDim;
+    this.geoLess = stackDim !== this.geoDomainDimension && sideDim !== this.geoDomainDimension && this.AGEDIM !== this.geoDomainDimension;
     this.sideSkip = this.model.marker.side.use == "constant";
   },
 
@@ -288,17 +296,17 @@ const BarChartDS = Component.extend({
         d["x_"] = 0;
         let width;
         if (_this.geoLess && _this.stackSkip && _this.sideSkip) {
-          width = (_this.frameAxisX[d[_this.AGEDIM] + _this.ageShift] || {})[_this.geoDomainDefaultValue];
+          width = (_this.frameAxisX[d[_this.AGEDIM]] || {})[_this.geoDomainDefaultValue];
         } else if (_this.geoLess && _this.stackSkip) {
-          width = _this.colorUseConstant || d[_this.PREFIXEDSIDEDIM] == d[_this.PREFIXEDSTACKDIM] ? (_this.frameAxisX[d[_this.PREFIXEDSIDEDIM]][d[_this.AGEDIM] + _this.ageShift] || {})[_this.geoDomainDefaultValue] : 0;
+          width = _this.colorUseNotProperty || d[_this.PREFIXEDSIDEDIM] == d[_this.PREFIXEDSTACKDIM] ? (_this.frameAxisX[d[_this.PREFIXEDSIDEDIM]][d[_this.AGEDIM]] || {})[_this.geoDomainDefaultValue] : 0;
         } else if (_this.geoLess && _this.sideSkip) {
-          width = (_this.frameAxisX[d[_this.PREFIXEDSTACKDIM]][d[_this.AGEDIM] + _this.ageShift] || {})[_this.geoDomainDefaultValue];
+          width = (_this.frameAxisX[d[_this.PREFIXEDSTACKDIM]][d[_this.AGEDIM]] || {})[_this.geoDomainDefaultValue];
         } else if (_this.stackSkip) {
-          width = _this.colorUseConstant || d[_this.PREFIXEDSIDEDIM] == d[_this.PREFIXEDSTACKDIM] ? _this.frameAxisX[d[_this.PREFIXEDSIDEDIM]][d[_this.AGEDIM] + _this.ageShift] : 0;
+          width = _this.colorUseNotProperty || d[_this.PREFIXEDSIDEDIM] == d[_this.PREFIXEDSTACKDIM] ? _this.frameAxisX[d[_this.PREFIXEDSIDEDIM]][d[_this.AGEDIM]] : 0;
         } else if (_this.sideSkip) {
-          width = _this.frameAxisX[d[_this.PREFIXEDSTACKDIM]][d[_this.AGEDIM] + _this.ageShift];
+          width = _this.frameAxisX[d[_this.PREFIXEDSTACKDIM]][d[_this.AGEDIM]];
         } else {
-          width = _this.frameAxisX[d[_this.PREFIXEDSTACKDIM]][d[_this.PREFIXEDSIDEDIM]][d[_this.AGEDIM] + _this.ageShift];
+          width = _this.frameAxisX[d[_this.PREFIXEDSTACKDIM]][d[_this.PREFIXEDSIDEDIM]][d[_this.AGEDIM]];
         }
         d["width_"] = width ? _this.xScale(width) : 0;
         if (_this.ui.chart.inpercent) {
@@ -341,7 +349,7 @@ const BarChartDS = Component.extend({
     this.STACKDIM = this.stack.getDimension() || this.model.marker.color.which;
     this.PREFIXEDSTACKDIM = "stack_" + this.STACKDIM;
     this.age = this.model.marker.axis_y.getEntity();
-    this.AGEDIM = this.age.getDimension();
+    this.AGEDIM = this.SHIFTEDAGEDIM = this.age.getDimension();
     this.TIMEDIM = this.model.time.getDimension();
     this.groupBy = this.age.grouping || 1;
     this.checkDimensions();
@@ -352,97 +360,19 @@ const BarChartDS = Component.extend({
     this.model.marker.getFrame(_this.model.time.value, frame => {
       _this.frame = frame;
       _this.frameAxisX = frame.axis_x;
+      _this.model.marker_order.getFrame(_this.model.time.value, frameOrder => {
+        _this.frameOrder = frameOrder.hook_order;
+        _this._createLimits();
+        _this._updateLimits();
+  
+        _this._reorderBars();
+        _this.markers = this.model.marker.getKeys(_this.AGEDIM);
 
-      _this._createLimits();
-      _this._updateLimits();
-
-      _this.resize();
-      _this._updateEntities(true);
-      _this.updateBarsOpacity();
+        _this.resize();
+        _this._updateEntities(true);
+        _this.updateBarsOpacity();
+      });
     });
-  },
-
-  interpolateDiagonal(pValues, nValues, fraction) {
-    const _this = this;
-    const dataBetweenFrames = {};
-    let data;
-    let val1, val2, shiftedAge;
-    const groupBy = this.groupBy;
-    if (this.geoLess && this.stackSkip && this.sideSkip) {
-      data = dataBetweenFrames;
-      utils.forEach(_this.ageKeys, age => {
-        shiftedAge = +age + groupBy;
-        val1 = pValues[age][_this.geoDomainDefaultValue];
-        val2 = (nValues[shiftedAge] || {})[_this.geoDomainDefaultValue] || 0;
-        data[shiftedAge] = {};
-        data[shiftedAge][_this.geoDomainDefaultValue] = (val1 == null || val2 == null) ? null : val1 + ((val2 - val1) * fraction);
-      });
-      data[0] = {};
-      data[0][_this.geoDomainDefaultValue] = nValues[0][_this.geoDomainDefaultValue] || 0;
-    } else if (this.stackSkip && this.geoLess) {
-      utils.forEach(_this.sideKeys, side => {
-        data = dataBetweenFrames[side] = {};
-        utils.forEach(_this.ageKeys, age => {
-          shiftedAge = +age + groupBy;
-          val1 = pValues[side][age][_this.geoDomainDefaultValue];
-          val2 = (nValues[side][shiftedAge] || {})[_this.geoDomainDefaultValue] || 0;
-          data[shiftedAge] = {};
-          data[shiftedAge][_this.geoDomainDefaultValue] = (val1 == null || val2 == null) ? null : val1 + ((val2 - val1) * fraction);
-        });
-        data[0] = {};
-        data[0][_this.geoDomainDefaultValue] = nValues[side][0][_this.geoDomainDefaultValue] || 0;
-      });
-    } else if (this.stackSkip) {
-      utils.forEach(_this.sideKeys, side => {
-        data = dataBetweenFrames[side] = {};
-        utils.forEach(_this.ageKeys, age => {
-          shiftedAge = +age + groupBy;
-          val1 = pValues[side][age];
-          val2 = nValues[side][shiftedAge] || 0;
-          data[shiftedAge] = (val1 == null || val2 == null) ? null : val1 + ((val2 - val1) * fraction);
-        });
-        data[0] = nValues[side][0] || 0;
-      });
-    } else if (this.sideSkip && this.geoLess) {
-      utils.forEach(_this.stackKeys, stack => {
-        data = dataBetweenFrames[stack] = {};
-        utils.forEach(_this.ageKeys, age => {
-          shiftedAge = +age + groupBy;
-          val1 = pValues[stack][age][_this.geoDomainDefaultValue];
-          val2 = (nValues[stack][shiftedAge] || {})[_this.geoDomainDefaultValue] || 0;
-          data[shiftedAge] = {};
-          data[shiftedAge][_this.geoDomainDefaultValue] = (val1 == null || val2 == null) ? null : val1 + ((val2 - val1) * fraction);
-        });
-        data[0] = {};
-        data[0][_this.geoDomainDefaultValue] = nValues[stack][0][_this.geoDomainDefaultValue] || 0;
-      });
-    } else if (this.sideSkip) {
-      utils.forEach(_this.stackKeys, stack => {
-        data = dataBetweenFrames[stack] = {};
-        utils.forEach(_this.ageKeys, age => {
-          shiftedAge = +age + groupBy;
-          val1 = pValues[stack][age];
-          val2 = nValues[stack][shiftedAge] || 0;
-          data[shiftedAge] = (val1 == null || val2 == null) ? null : val1 + ((val2 - val1) * fraction);
-        });
-        data[0] = nValues[stack][0] || 0;
-      });
-    } else {
-      utils.forEach(_this.stackKeys, stack => {
-        dataBetweenFrames[stack] = {};
-        utils.forEach(_this.sideKeys, side => {
-          data = dataBetweenFrames[stack][side] = {};
-          utils.forEach(_this.ageKeys, age => {
-            shiftedAge = +age + groupBy;
-            val1 = pValues[stack][side][age];
-            val2 = nValues[stack][side][shiftedAge] || 0;
-            data[shiftedAge] = (val1 == null || val2 == null) ? null : val1 + ((val2 - val1) * fraction);
-          });
-          data[0] = nValues[stack][side][0] || 0;
-        });
-      });
-    }
-    return dataBetweenFrames;
   },
 
   updateUIStrings() {
@@ -512,9 +442,9 @@ const BarChartDS = Component.extend({
     const ages = this.model.marker.getKeys(ageDim);
     let ageKeys = [];
     ageKeys = ages.map(m => m[ageDim]);
-    this.ageKeys = ageKeys;
+    this.shiftedAgeKeys = this.ageKeys = ageKeys;
 
-    this.shiftedAgeKeys = this.timeSteps.map((m, i) => -i * groupBy).slice(1).reverse().concat(ageKeys);
+    //this.shiftedAgeKeys = this.timeSteps.map((m, i) => -i * groupBy).slice(1).reverse().concat(ageKeys);
 
     const sideItems = this.model.marker.label_side.getItems();
     //var sideKeys = Object.keys(sideItems);
@@ -568,9 +498,13 @@ const BarChartDS = Component.extend({
     }
 
     this.cScale = this.model.marker.color.getScale();
+  },
 
-    const shiftedAgeDim = this.SHIFTEDAGEDIM;
-    this.markers = this.model.marker.getKeys(ageDim);
+  _reorderBars() {
+    const _this = this;
+    const domain = this.yScale.domain();
+    domain.sort((a, b) => d3.ascending(_this.frameOrder[a] || 0, _this.frameOrder[b] || 0));
+    this.yScale.domain(domain);
   },
 
   _createLimits() {
@@ -734,26 +668,26 @@ const BarChartDS = Component.extend({
 
     //this.model.age.setVisible(markers);
 
-    const nextStep = d3.bisectLeft(this.timeSteps, time.value);
+    //const nextStep = d3.bisectLeft(this.timeSteps, time.value);
 
     const shiftedAgeDim = this.SHIFTEDAGEDIM;
 
-    const markers = this.markers.map(data => {
-        const o = {};
-    o[ageDim] = o[shiftedAgeDim] = +data[ageDim];
-    o[ageDim] -= nextStep * groupBy;
-    return o;
-  });
+  //   const markers = this.markers.map(data => {
+  //       const o = {};
+  //   o[ageDim] = o[shiftedAgeDim] = +data[ageDim];
+  //   o[ageDim] -= nextStep * groupBy;
+  //   return o;
+  // });
 
-    const ageBars = markers.slice(0);
+    const ageBars = this.markers.slice(0);
 
-    const outAge = {};
-    outAge[shiftedAgeDim] = markers.length * groupBy;
-    outAge[ageDim] = outAge[shiftedAgeDim] - nextStep * groupBy;
+    // const outAge = {};
+    // outAge[shiftedAgeDim] = markers.length * groupBy;
+    // outAge[ageDim] = outAge[shiftedAgeDim] - nextStep * groupBy;
 
-    this.ageShift = nextStep * groupBy;
+   //this.ageShift = 0;//= nextStep * groupBy;
 
-    if (nextStep) ageBars.push(outAge);
+    // if (nextStep) ageBars.push(outAge);
 
     this.entityBars = this.bars.selectAll(".vzb-bc-bar")
         .data(ageBars, d => d[ageDim]);
@@ -767,7 +701,8 @@ const BarChartDS = Component.extend({
     //enter selection -- init bars
     this.entityBars = this.entityBars.enter().append("g")
         .attr("class", d => "vzb-bc-bar " + "vzb-bc-bar-" + d[ageDim])
-  .attr("transform", (d, i) => "translate(0," + (firstBarOffsetY - (d[shiftedAgeDim] - domain[0] - groupBy) * oneBarHeight) + ")")
+//  .attr("transform", (d, i) => "translate(0," + (firstBarOffsetY - (d[shiftedAgeDim] - domain[0] - groupBy) * oneBarHeight) + ")")
+  .attr("transform", (d, i) => "translate(0," + (firstBarOffsetY - _this.yScale(d[shiftedAgeDim])) + ")")
   .merge(this.entityBars);
 
     // this.entityBars.attr("class", function(d) {
@@ -816,7 +751,7 @@ const BarChartDS = Component.extend({
         .attr("class", (d, i) => "vzb-bc-stack " + "vzb-bc-stack-" + i + (_this.highlighted ? " vzb-dimmed" : ""))
   .attr("y", 0)
       .attr("height", barHeight)
-      .attr("fill", d => _this.cScale(d[prefixedStackDim]))
+      .attr("fill", d => _this.cScale(_this.colorUseNotProperty ? _this.frame.color[d[_this.PREFIXEDSIDEDIM]][d[_this.AGEDIM]] : d[prefixedStackDim]))
   .attr("width", _attributeUpdaters._newWidth)
       .attr("x", _attributeUpdaters._newX)
       .on("mouseover", _this.interaction.mouseover)
@@ -827,47 +762,8 @@ const BarChartDS = Component.extend({
 
 
     if (reorder) this.stackBars
-      .attr("fill", d => _this.cScale(d[prefixedStackDim]))
+      .attr("fill", d => _this.cScale(_this.colorUseNotProperty ? _this.frame.color[d[_this.PREFIXEDSIDEDIM]][d[_this.AGEDIM]] : d[prefixedStackDim]))
       .order();
-
-    // this.stackBars = this.bars.selectAll('.vzb-bc-bar')
-    //   .selectAll('.vzb-bc-side')
-    //     .attr("transform", function(d, i) {
-    //       return i ? ("scale(-1,1) translate(" + _this.activeProfile.centerWidth + ",0)") : "";
-    //     })
-    //   .selectAll('.vzb-bc-stack')
-    //     .attr("height", barHeight)
-    //     .attr("fill", function(d) {
-    //       //return _this._temporaryBarsColorAdapter(values, d, ageDim);
-    //       //return _this.cScale(values.color[d[ageDim]]);
-    //       return _this.cScale(d[stackDim]);
-    //     })
-    //     //.attr("shape-rendering", "crispEdges") // this makes sure there are no gaps between the bars, but also disables anti-aliasing
-    //     .each(function(d, i) {
-    //       var total = _this.ui.chart.inpercent ? _this.totalValues[d[sideDim]] : 1;
-    //       var sum = 0;
-    //       if(shiftedValues[d[ageDim]]) {
-    //         if(_this.stacked) {
-    //           sum = shiftedValues[d[ageDim]][d[sideDim]][d[stackDim]];
-    //         } else {
-    //           var stacksData = shiftedValues[d[ageDim]][d[sideDim]];
-    //           utils.forEach(stacksData, function(val) {
-    //             sum += val;
-    //           });
-    //         }
-    //       }
-    //       //var prevWidth = +this.getAttribute("width");
-    //       d["width_"] = _this.xScale(sum / total);
-    //       //d3.select(this).classed("vzb-hidden", d["width_"] < 1 && prevWidth < 1);
-
-    //       var prevSbl = this.previousSibling;
-    //       if(prevSbl) {
-    //         var prevSblDatum = d3.select(prevSbl).datum();
-    //         d["x_"] = prevSblDatum.x_ + prevSblDatum.width_;
-    //       } else {
-    //         d["x_"] = 0;
-    //       }
-    //     });
 
     const stepShift = (ageBars[0][shiftedAgeDim] - ageBars[0][ageDim]) - this.shiftScale(time.value) * groupBy;
 
@@ -878,21 +774,23 @@ const BarChartDS = Component.extend({
 
       this.entityBars
         .transition(transition)
-        .attr("transform", (d, i) => "translate(0," + (firstBarOffsetY - (d[shiftedAgeDim] - domain[0] - stepShift) * oneBarHeight) + ")");
+        .attr("transform", (d, i) => "translate(0," + (firstBarOffsetY - _this.yScale(d[shiftedAgeDim])) + ")");
+//        .attr("transform", (d, i) => "translate(0," + (firstBarOffsetY - (d[shiftedAgeDim] - domain[0] - stepShift) * oneBarHeight) + ")");
       this.stackBars
         .transition(transition)
         .attr("width", _attributeUpdaters._newWidth)
         .attr("x", _attributeUpdaters._newX);
     } else {
       this.entityBars.interrupt()
-        .attr("transform", (d, i) => "translate(0," + (firstBarOffsetY - (d[shiftedAgeDim] - domain[0] - stepShift) * oneBarHeight) + ")");
+        .attr("transform", (d, i) => "translate(0," + (firstBarOffsetY - _this.yScale(d[shiftedAgeDim])) + ")");
+//        .attr("transform", (d, i) => "translate(0," + (firstBarOffsetY - (d[shiftedAgeDim] - domain[0] - stepShift) * oneBarHeight) + ")");
       this.stackBars.interrupt()
         .attr("width", _attributeUpdaters._newWidth)
         .attr("x", _attributeUpdaters._newX);
     }
 
     this.entityLabels = this.labels.selectAll(".vzb-bc-label")
-      .data(markers);
+      .data(this.markers);
     //exit selection
     this.entityLabels.exit().remove();
 
@@ -913,7 +811,7 @@ const BarChartDS = Component.extend({
 
     d["text"] = age + yearOlds;
   })
-  .attr("y", (d, i) => firstBarOffsetY - (d[shiftedAgeDim] - domain[0]) * oneBarHeight - 10);
+  .attr("y", (d, i) => firstBarOffsetY - _this.yScale(d[shiftedAgeDim]) - 10);
     // .style("fill", function(d) {
     //   var color = _this.cScale(values.color[d[ageDim]]);
     //   return d3.rgb(color).darker(2);
@@ -1076,7 +974,7 @@ const BarChartDS = Component.extend({
     const groupBy = this.groupBy;
 
     const domain = this.yScale.domain();
-    this.oneBarHeight = this.height / (domain[1] - domain[0]);
+    this.oneBarHeight = this.model.marker.axis_y.scaleType == "ordinal" ? this.height / domain.length : this.height / (domain[1] - domain[0]);
     const barHeight = this.barHeight = this.oneBarHeight * groupBy; // height per bar is total domain height divided by the number of possible markers in the domain
     this.firstBarOffsetY = this.height - this.barHeight;
 
@@ -1095,6 +993,7 @@ const BarChartDS = Component.extend({
 
     //apply scales to axes and redraw
     this.yAxis.scale(this.yScale)
+      .tickValues([])
       .tickSizeInner(-this.width)
       .tickSizeOuter(0)
       .tickPadding(6)
@@ -1102,7 +1001,7 @@ const BarChartDS = Component.extend({
       .labelerOptions({
         scaleType: this.model.marker.axis_y.scaleType,
         toolMargin: margin,
-        limitMaxTickNumber: 19
+        limitMaxTickNumber: 1
       });
 
     const format = this.ui.chart.inpercent ? d3.format((groupBy > 3 ? "" : ".1") + "%") : this.model.marker.axis_x.getTickFormatter();

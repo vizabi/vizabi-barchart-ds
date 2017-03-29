@@ -19,7 +19,7 @@ const BarChartDS = Vizabi.Tool.extend("BarChartDS", {
     this.components = [{
       component,
       placeholder: ".vzb-tool-viz",
-      model: ["state.time", "state.marker", "state.entities", "state.entities_side", "state.entities_allpossible", "state.entities_geodomain", "locale", "ui"] //pass models to component
+      model: ["state.time", "state.marker", "state.marker_order", "state.entities", "state.entities_side", "state.entities_allpossible", "state.entities_geodomain", "locale", "ui"] //pass models to component
     }, {
       component: Vizabi.Component.get("timeslider"),
       placeholder: ".vzb-tool-timeslider",
@@ -70,7 +70,7 @@ const BarChartDS = Vizabi.Tool.extend("BarChartDS", {
 
       const entities_geodomain = model.state.entities_geodomain;
       entities_geodomain.skipFilter = model.state.entities.dim === entities_geodomain.dim ||
-        model.state.entities_side.dim === entities_geodomain.dim;
+        model.state.entities_side.dim === entities_geodomain.dim || model.state.entities_age.dim === entities_geodomain.dim;
     }
   },
 
