@@ -96,6 +96,13 @@ const BarChartDS = Component.extend({
         }
         _this.snapped = false;
       },
+      "change:marker": function(evt, path) {
+        if (!_this._readyOnce) return;
+        if (path.indexOf("scaleType") > -1) {
+          _this.ready();
+          return;
+        }
+      },
       "change:marker.select": function(evt) {
         _this.someSelected = (_this.model.marker.select.length > 0);
         _this.nonSelectedOpacityZero = false;
@@ -620,11 +627,12 @@ const BarChartDS = Component.extend({
   _updateLimits() {
     const _this = this;
     const axisX = this.model.marker.axis_x;
+    const zero = axisX.scaleType == "log" ? 0.01 : 0;
     let domain;
     if (this.ui.chart.inpercent) {
-      domain = [0, Math.max(...this.sideKeys.map(s => _this.inpercentMaxLimits[s]))];
+      domain = [zero * 0.01, Math.max(...this.sideKeys.map(s => _this.inpercentMaxLimits[s]))];
     } else {
-      domain = (axisX.domainMin != null && axisX.domainMax != null) ? [+axisX.domainMin, +axisX.domainMax] : [0, Math.max(...this.sideKeys.map(s => _this.maxLimits[s]))];
+      domain = (axisX.domainMin != null && axisX.domainMax != null) ? [+axisX.domainMin, +axisX.domainMax] : [zero, Math.max(...this.sideKeys.map(s => _this.maxLimits[s]))];
     }
     this.xScale.domain(domain);
     if (this.xScaleLeft) this.xScaleLeft.domain(this.xScale.domain());
@@ -748,11 +756,11 @@ const BarChartDS = Component.extend({
 
     this.stackBars.exit().remove();
     this.stackBars = this.stackBars.enter().append("rect")
-        .attr("class", (d, i) => "vzb-bc-stack " + "vzb-bc-stack-" + i + (_this.highlighted ? " vzb-dimmed" : ""))
-  .attr("y", 0)
+      .attr("class", (d, i) => "vzb-bc-stack " + "vzb-bc-stack-" + i + (_this.highlighted ? " vzb-dimmed" : ""))
+      .attr("y", 0)
       .attr("height", barHeight)
       .attr("fill", d => _this.cScale(_this.colorUseNotProperty ? _this.frame.color[d[_this.PREFIXEDSIDEDIM]][d[_this.AGEDIM]] : d[prefixedStackDim]))
-  .attr("width", _attributeUpdaters._newWidth)
+      .attr("width", _attributeUpdaters._newWidth)
       .attr("x", _attributeUpdaters._newX)
       .on("mouseover", _this.interaction.mouseover)
       .on("mouseout", _this.interaction.mouseout)
@@ -773,7 +781,7 @@ const BarChartDS = Component.extend({
         .ease(d3.easeLinear);
 
       this.entityBars
-        .transition(transition)
+        //.transition(transition)
         .attr("transform", (d, i) => "translate(0," + (firstBarOffsetY - _this.yScale(d[shiftedAgeDim])) + ")");
 //        .attr("transform", (d, i) => "translate(0," + (firstBarOffsetY - (d[shiftedAgeDim] - domain[0] - stepShift) * oneBarHeight) + ")");
       this.stackBars
@@ -1053,7 +1061,12 @@ const BarChartDS = Component.extend({
         const zeroTickWidth = zeroTickEl.node().getBBox().width;
         zeroTickEl.attr("dx", -(this.activeProfile.centerWidth + zeroTickWidth) * 0.5);
       }
-    }
+      this.xAxisEl.select(".tick line").classed("vzb-hidden", true);
+   
+      //hide left axis zero tick
+      const tickNodes = this.xAxisLeftEl.selectAll(".tick").nodes();
+      d3.select(tickNodes[tickNodes.length - 1]).classed("vzb-hidden", true);
+   }
 
     const isRTL = this.model.locale.isRTL();
 
