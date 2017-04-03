@@ -10,7 +10,7 @@
   "name": "vizabi-barchart-ds",
   "version": "1.0.0",
   "dependencies": {
-    "vizabi": "^0.20.2-6"
+    "vizabi": "^0.21.0-20"
   },
   "repository": {
     "type": "git",
