@@ -8,7 +8,7 @@
     "vizabi-tool-bundler": "github:vizabi/vizabi-tool-bundler"
   },
   "name": "vizabi-barchart-ds",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "dependencies": {
     "vizabi": "^0.21.0-20"
   },
