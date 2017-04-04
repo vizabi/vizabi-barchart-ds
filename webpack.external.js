@@ -1,1 +1,1 @@
-module.exports = require("vizabi-tool-bundler").bind(null, "BarChartDS", "barchart-ds", __dirname);
+module.exports = require("vizabi-tool-bundler").bind(null, "BarChartDS", "barchartds", __dirname);
