@@ -76,7 +76,7 @@ const BarChartDS = Component.extend({
                 _this.frameOrder = frameOrder.hook_order;
 
                 _this._reorderBars();
-                _this._updateEntities();
+                _this._updateEntities(true);
                 _this.updateBarsOpacity();
               });
             });
@@ -282,6 +282,7 @@ const BarChartDS = Component.extend({
     this.labelsCrop = this.graph.select(".vzb-bc-labels-crop");
     this.bars = this.graph.select(".vzb-bc-bars");
     this.labels = this.graph.select(".vzb-bc-labels");
+    this.labels.select(".vzb-bc-age").attr("y", -10);
 
     this.title = this.element.select(".vzb-bc-title");
     this.titleRight = this.element.select(".vzb-bc-title-right");
@@ -349,6 +350,7 @@ const BarChartDS = Component.extend({
       .domain([this.timeSteps[0], this.timeSteps[this.timeSteps.length - 1]])
       .range([0, this.timeSteps.length - 1]);
 
+    this.KEYS = utils.unique(this.model.marker._getAllDimensions({ exceptType: "time" }));
     this.side = this.model.marker.label_side.getEntity();
     this.SIDEDIM = this.side.getDimension();
     this.PREFIXEDSIDEDIM = "side_" + this.SIDEDIM;
@@ -471,7 +473,7 @@ const BarChartDS = Component.extend({
     if (!sideKeys.length) sideKeys.push("undefined");
     this.sideKeys = sideKeys;
 
-    const stacks = this.model.marker.getKeys(stackDim);
+    const stacks = this.model.marker.color.use == "indicator" ? [] : this.model.marker.getKeys(stackDim);
     const stackKeys = utils.without(stacks.map(m => {
         if (m[stackDim] == _this.totalFieldName) _this.dataWithTotal = true;
         return m[stackDim];
@@ -510,7 +512,11 @@ const BarChartDS = Component.extend({
   _reorderBars() {
     const _this = this;
     const domain = this.yScale.domain();
-    domain.sort((a, b) => d3.ascending(_this.frameOrder[a] || 0, _this.frameOrder[b] || 0));
+    const sideKeys = this.sideKeys;
+    domain.sort((a, b) => { 
+      const result = d3.ascending(_this.frameOrder[a] || 0, _this.frameOrder[b] || 0);
+      return result !== 0 ? result : d3.ascending(_this.frameAxisX[sideKeys[0]][a] || 0, _this.frameAxisX[sideKeys[0]][b] || 0);
+    });
     this.yScale.domain(domain);
   },
 
@@ -730,9 +736,7 @@ const BarChartDS = Component.extend({
     this.sideBars.exit().remove();
     this.sideBars = this.sideBars.enter().append("g")
         .attr("class", (d, i) => "vzb-bc-side " + "vzb-bc-side-" + (!i != !_this.twoSided ? "right" : "left"))
-  .merge(this.sideBars);
-
-    this.sideBars.attr("transform", (d, i) => i ? ("scale(-1,1) translate(" + _this.activeProfile.centerWidth + ",0)") : "");
+    .merge(this.sideBars);
 
     if (reorder) {
       this.sideBars.attr("transform", (d, i) => i ? ("scale(-1,1) translate(" + _this.activeProfile.centerWidth + ",0)") : "");
@@ -741,18 +745,18 @@ const BarChartDS = Component.extend({
     const _attributeUpdaters = this._attributeUpdaters;
 
     this.stackBars = this.sideBars.selectAll(".vzb-bc-stack").data((d, i) => {
-        const stacks = _this.stacked ? _this.stackKeys : [_this.totalFieldName];
-    return stacks.map(m => {
+      const stacks = _this.stacked ? _this.stackKeys : [_this.totalFieldName];
+      return stacks.map(m => {
         const r = {};
-    r[ageDim] = d[ageDim];
-    r[shiftedAgeDim] = d[shiftedAgeDim];
-    r[sideDim] = d[sideDim];
-    r[stackDim] = m;
-    r[prefixedSideDim] = d[prefixedSideDim];
-    r[prefixedStackDim] = m;
-    return r;
-  });
-  }, d => d[prefixedStackDim]);
+        r[ageDim] = d[ageDim];
+        r[shiftedAgeDim] = d[shiftedAgeDim];
+        r[sideDim] = d[sideDim];
+        r[stackDim] = m;
+        r[prefixedSideDim] = d[prefixedSideDim];
+        r[prefixedStackDim] = m;
+        return r;
+      });
+    }, d => d[prefixedStackDim]);
 
     this.stackBars.exit().remove();
     this.stackBars = this.stackBars.enter().append("rect")
@@ -797,33 +801,25 @@ const BarChartDS = Component.extend({
         .attr("x", _attributeUpdaters._newX);
     }
 
-    this.entityLabels = this.labels.selectAll(".vzb-bc-label")
-      .data(this.markers);
-    //exit selection
-    this.entityLabels.exit().remove();
+    // this.entityLabels = this.labels.selectAll(".vzb-bc-label")
+    //   .data(this.markers, d => d[ageDim]);
+    // //exit selection
+    // this.entityLabels.exit().remove();
 
-    this.entityLabels.enter().append("g")
-      .attr("class", "vzb-bc-label")
-      .attr("id", d => "vzb-bc-label-" + d[shiftedAgeDim] + "-" + _this._id)
-  .append("text")
-      .attr("class", "vzb-bc-age")
-      .merge(this.entityLabels)
-      .each((d, i) => {
-      const yearOlds = _this.translator("popbyage/yearOlds");
+    // const entityLabels = this.entityLabels.enter().append("g")
+    //   .attr("class", "vzb-bc-label")
+    //   .attr("id", d => "vzb-bc-label-" + d[shiftedAgeDim] + "-" + _this._id)
+    // entityLabels.append("text")
+    //   .attr("class", "vzb-bc-age")
+    //   .attr("y", (d, i) => firstBarOffsetY - _this.yScale(d[shiftedAgeDim]) - 10);
 
-    let age = parseInt(d[ageDim], 10);
+    // this.entityLabels = entityLabels.merge(this.entityLabels);
+    // // .style("fill", function(d) {
+    // //   var color = _this.cScale(values.color[d[ageDim]]);
+    // //   return d3.rgb(color).darker(2);
+    // // });
 
-    if (groupBy > 1) {
-      age = age + "-to-" + (age + groupBy - 1);
-    }
-
-    d["text"] = age + yearOlds;
-  })
-  .attr("y", (d, i) => firstBarOffsetY - _this.yScale(d[shiftedAgeDim]) - 10);
-    // .style("fill", function(d) {
-    //   var color = _this.cScale(values.color[d[ageDim]]);
-    //   return d3.rgb(color).darker(2);
-    // });
+    // if (reorder) this.entityLabels.selectAll(".vzb-bc-age").attr("y", (d, i) => firstBarOffsetY - _this.yScale(d[shiftedAgeDim]) - 10);
 
     if (duration) {
       this.year.transition().duration(duration).ease(d3.easeLinear)
@@ -844,7 +840,7 @@ const BarChartDS = Component.extend({
       mouseover(d, i) {
         if (utils.isTouchDevice()) return;
         _this.model.marker.highlightMarker(d);
-        _this._showLabel(d);
+        //_this._showLabel(d);
       },
       mouseout(d, i) {
         if (utils.isTouchDevice()) return;
@@ -871,6 +867,8 @@ const BarChartDS = Component.extend({
     if (!_this.someHighlighted) {
       //hide labels
       _this.labels.selectAll(".vzb-hovered").classed("vzb-hovered", false);
+    } else {
+      _this._showLabel(_this.model.marker.highlight[0]);
     }
   },
 
@@ -880,20 +878,23 @@ const BarChartDS = Component.extend({
     const sideDim = _this.SIDEDIM;
     const ageDim = _this.AGEDIM;
     const stackDim = _this.STACKDIM;
-    const shiftedAgeDim = "s_age";
+    const KEYS = this.KEYS;
 
     const left = _this.sideKeys.indexOf(d[sideDim]);
-    const label = _this.labels.select("#vzb-bc-label-" + d[shiftedAgeDim] + "-" + _this._id);
-    label.selectAll(".vzb-bc-age")
+    const label = _this.labels.select(".vzb-bc-label");
+    const bar = _this.bars.select(".vzb-bc-bar-" + d[ageDim]);
+    //const label = _this.labels.select("#vzb-bc-label-" + d[ageDim] + "-" + _this._id);
+    label.attr("transform", bar.attr("transform"))
+      .select(".vzb-bc-age")
       .text(textData => {
-      //var total = _this.ui.chart.inpercent ? _this.totalValues[d[sideDim]] : 1;
-      let text = _this.stackKeys.length > 1 ? _this.stackItems[d[stackDim]] : textData.text;
-    text = _this.twoSided ? text : textData.text + " " + _this.stackItems[d[stackDim]];
-    const value = _this.xScale.invert(d["width_"]);
-    //var value = (_this.dataWithTotal || _this.stacked) ? _this.values1.axis_x[d[shiftedAgeDim]][d[sideDim]][d[stackDim]] / total : _this.xScale.invert(d["width_"]);
-    return text + ": " + formatter(value);
-  })
-  .attr("x", (left ? -1 : 1) * (_this.activeProfile.centerWidth * 0.5 + 7))
+        //var total = _this.ui.chart.inpercent ? _this.totalValues[d[sideDim]] : 1;
+        let text = _this.stackKeys.length > 1 ? _this.stackItems[d[stackDim]] : _this.frame.label_age[d[ageDim]];
+        text = _this.twoSided ? text : text + " " + _this.stackItems[d[stackDim]];
+        const value = utils.getValueMD(d, _this.frameAxisX, KEYS);//_this.xScale.invert(d["width_"]);
+        //var value = (_this.dataWithTotal || _this.stacked) ? _this.values1.axis_x[d[shiftedAgeDim]][d[sideDim]][d[stackDim]] / total : _this.xScale.invert(d["width_"]);
+        return text + ": " + formatter(value);
+      })
+      .attr("x", (left ? -1 : 1) * (_this.activeProfile.centerWidth * 0.5 + 7))
       .classed("vzb-text-left", left);
 
     label.classed("vzb-hovered", true);
