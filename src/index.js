@@ -1,6 +1,7 @@
 import "./styles.scss";
 import component from "./component";
 
+const VERSION_INFO = { version: __VERSION, build: __BUILD };
 
 //BAR CHART TOOL
 const BarChartDS = Vizabi.Tool.extend("BarChartDS", {
@@ -93,9 +94,9 @@ const BarChartDS = Vizabi.Tool.extend("BarChartDS", {
       presentation: false
     },
     locale: { }
-  }
+  },
 
-
+  versionInfo: VERSION_INFO
 });
 
 export default BarChartDS;
