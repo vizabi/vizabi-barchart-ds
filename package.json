@@ -1,5 +1,5 @@
 {
-  "main": "build/dist/barchart-ds.js",
+  "main": "build/barchart-ds.js",
   "scripts": {
     "link": "npm link ../vizabi",
     "build": "webpack --progress"
@@ -8,7 +8,7 @@
     "vizabi-tool-bundler": "github:vizabi/vizabi-tool-bundler"
   },
   "name": "vizabi-barchart-ds",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "dependencies": {
     "vizabi": "^0.21.0-20"
   },
