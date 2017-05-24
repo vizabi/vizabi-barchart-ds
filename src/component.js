@@ -401,8 +401,10 @@ const BarChartDS = Component.extend("barchartds", {
           .toggle();
       });
 
+    const conceptPropsX = this.model.marker.axis_x.getConceptprops();
     utils.setIcon(this.xInfoEl, iconQuestion)
-      .select("svg").attr("width", "0px").attr("height", "0px");
+      .select("svg").attr("width", "0px").attr("height", "0px")
+      .style('opacity', Number(Boolean(conceptPropsX.description || conceptPropsX.sourceLink)));
 
     this.xInfoEl.on("click", () => {
       _this.parent.findChildByName("gapminder-datanotes").pin();
