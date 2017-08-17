@@ -346,7 +346,7 @@ const BarChartDS = Component.extend("barchartds", {
 
     this.timeSteps = this.model.time.getAllSteps();
 
-    this.shiftScale = d3.scale.linear()
+    this.shiftScale = d3.scaleLinear()
       .domain([this.timeSteps[0], this.timeSteps[this.timeSteps.length - 1]])
       .range([0, this.timeSteps.length - 1]);
 
