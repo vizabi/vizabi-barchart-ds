@@ -1,10 +1,17 @@
 {
   "main": "build/barchart-ds.js",
+  "files": [
+    "build"
+  ],
   "scripts": {
     "link": "npm link ../vizabi",
-    "build": "webpack --progress"
+    "start": "webpack-dev-server",
+    "build": "cross-env NODE_ENV=production webpack --progress",
+    "deploy": "tool-deploy"
   },
   "devDependencies": {
+    "cross-env": "^5.0.0",
+    "vizabi": "^0.23.0-28",
     "vizabi-tool-bundler": "github:vizabi/vizabi-tool-bundler"
   },
   "name": "vizabi-barchart-ds",
