@@ -517,7 +517,7 @@ const BarChartDS = Component.extend("barchartds", {
     const sideKeys = this.sideKeys;
     domain.sort((a, b) => { 
       const result = d3.ascending(_this.frameOrder[a] || 0, _this.frameOrder[b] || 0);
-      return result !== 0 ? result : d3.ascending(_this.frameAxisX[sideKeys[0]][a] || 0, _this.frameAxisX[sideKeys[0]][b] || 0);
+      return result !== 0 ? result : d3.ascending((_this.frameAxisX[sideKeys[0]]||[])[a] || 0, (_this.frameAxisX[sideKeys[0]]||[])[b] || 0);
     });
     this.yScale.domain(domain);
   },

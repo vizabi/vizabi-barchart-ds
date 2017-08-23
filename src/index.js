@@ -71,7 +71,7 @@ const BarChartDS = Vizabi.Tool.extend("BarChartDS", {
 
       const entities_geodomain = model.state.entities_geodomain;
       entities_geodomain.skipFilter = model.state.entities.dim === entities_geodomain.dim ||
-        model.state.entities_side.dim === entities_geodomain.dim || model.state.entities_age.dim === entities_geodomain.dim;
+        model.state.entities_side.dim === entities_geodomain.dim || model.state.entities_allpossible.dim === entities_geodomain.dim;
     }
   },
 
