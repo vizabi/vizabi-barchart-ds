@@ -28,10 +28,10 @@ const BarChartDS = Component.extend("barchartds", {
       type: "time"
     }, {
       name: "marker",
-      type: "model"
+      type: "marker"
     }, {
       name: "marker_order",
-      type: "model"
+      type: "marker"
     }, {
       name: "entities",
       type: "entities"
