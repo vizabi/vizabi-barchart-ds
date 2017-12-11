@@ -269,7 +269,7 @@ const BarChartDS = Component.extend("barchartds", {
     this._attributeUpdaters = {
       _newWidth(d, i) {
         d["x_"] = 0;
-        const width = utils.getValueMD(d, _this.frameAxisX, _this.KEYS);
+        const width = _this.frameAxisX[utils.getKey(d, _this.KEYS)];
         // let width;
         // if (_this.geoLess && _this.stackSkip && _this.sideSkip) {
         //   width = (_this.frameAxisX[d[_this.AGEDIM]] || {})[_this.geoDomainDefaultValue];
@@ -302,7 +302,7 @@ const BarChartDS = Component.extend("barchartds", {
         return d.x_;
       },
       _newColor(d, i) {
-        return _this.cScale(!_this.colorUseNotProperty ? (_this.frame.color[d[_this.STACKDIM]] || {})[d[_this.PREFIXEDSIDEDIM]] : _this.frame.color[d[_this.STACKDIM]]);
+        return _this.cScale(!_this.colorUseNotProperty ? _this.frame.color[utils.getKey(d, _this.COLORKEYS)] : _this.frame.color[d[_this.STACKDIM]]);
       }
     };
   },
@@ -327,6 +327,7 @@ const BarChartDS = Component.extend("barchartds", {
     this.STACKDIM = this.stack.getDimension();
     this.PREFIXEDSTACKDIM = "stack_" + this.STACKDIM;
     this.TIMEDIM = this.model.time.getDimension();
+    this.COLORKEYS = [this.STACKDIM, this.PREFIXEDSIDEDIM];
     this.checkDimensions();
     this.updateUIStrings();
     this._updateIndicators();
@@ -337,6 +338,7 @@ const BarChartDS = Component.extend("barchartds", {
       _this.frameAxisX = frame.axis_x;
       _this.model.marker_order.getFrame(_this.model.time.value, frameOrder => {
         _this.frameOrder = frameOrder.hook_order;
+        _this.items = _this.model.marker.getKeys();
         _this._createLimits();
         _this._updateLimits();
   
@@ -476,6 +478,7 @@ const BarChartDS = Component.extend("barchartds", {
     const totals = {};
     const inpercentMaxLimits = {};
     const maxLimits = {};
+    let key;
     sideKeysNF.forEach(s => {
       maxLimits[s] = [];
       inpercentMaxLimits[s] = [];
@@ -505,8 +508,9 @@ const BarChartDS = Component.extend("barchartds", {
           let stackSum = 0;
           const sideMaxLimits = [];
           utils.forEach(_this.stackKeys, stack => {
-            if (limits[side] && limits[side][stack] && limits[side][stack][time]) {
-              const val = limits[side][stack][time].max;
+            key = side + "," + stack;
+            if (limits[key] && limits[key][time]) {
+              const val = limits[key][time].max;
               stackSum += val;
               sideMaxLimits.push(val);
             }
@@ -715,7 +719,7 @@ const BarChartDS = Component.extend("barchartds", {
         let text = _this.frame.label_stack[d[stackDim]];
         text = _this.twoSided ? text : text + " " + _this.stackItems[d[stackDim]];
         const total = _this.ui.chart.inpercent ? _this.total[d[sideDim]] : 1;
-        const value = utils.getValueMD(d, _this.frameAxisX, KEYS) / total;
+        const value = _this.frameAxisX[utils.getKey(d, KEYS)] / total;
         return text + ": " + formatter(value);
       })
       .attr("x", (left ? -1 : 1) * (_this.activeProfile.centerWidth * 0.5 + 7))
