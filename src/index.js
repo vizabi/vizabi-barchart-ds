@@ -84,7 +84,7 @@ const BarChartDS = Vizabi.Tool.extend("BarChartDS", {
         inpercent: false,
         flipSides: true
       },
-      "buttons": ["colors", "inpercent", "find", "side", "moreoptions", "fullscreen"],
+      "buttons": ["colors", "inpercent", "find", "side", "moreoptions", "sidebarcollapse", "fullscreen"],
       "dialogs": {
         "popup": ["timedisplay", "colors", "find", "side", "moreoptions"],
         "sidebar": ["timedisplay", "colors", "find"],
